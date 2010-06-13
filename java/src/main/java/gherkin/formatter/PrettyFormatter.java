@@ -46,7 +46,7 @@ public class PrettyFormatter implements Formatter {
 
     public void feature(String keyword, String name, String description, int line) {
         printCommentsAndTags("");
-        out.println(keyword + ": " + indent(name, "  "));
+        out.println(keyword + ": " + indent(content(name, description), "  "));
         out.flush();
     }
 
@@ -156,7 +156,7 @@ public class PrettyFormatter implements Formatter {
         }
         stepIndex = -1;
     }
-
+    
     private void padSpace(int indent, StringBuffer buffer) {
         for (int i = 0; i < indent; i++) {
             buffer.append(" ");
@@ -192,6 +192,15 @@ public class PrettyFormatter implements Formatter {
         out.flush();
         tags = null;
         return true;
+    }
+
+    private String content(String name, String description) {
+      StringBuilder result = new StringBuilder();
+      result.append(name);
+      if (description != "") {
+        result.append("\n").append(description);
+      }
+      return result.toString();
     }
 
     private String indent(String name, String indentation) {
