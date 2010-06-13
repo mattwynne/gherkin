@@ -64,7 +64,7 @@ public class PrettyFormatter implements Formatter {
         flushTable();
         out.println();
         printCommentsAndTags("  ");
-        out.println("  " + keyword + ": " + indent(name, "    ") + indentedScenarioLocation(keyword, name, location));
+        out.println("  " + keyword + ": " + indent(content(name, description), "    ") + indentedScenarioLocation(keyword, name, location));
         out.flush();
     }
 
@@ -197,7 +197,7 @@ public class PrettyFormatter implements Formatter {
     private String content(String name, String description) {
       StringBuilder result = new StringBuilder();
       result.append(name);
-      if (description != "") {
+      if (description.trim() != "") {
         result.append("\n").append(description);
       }
       return result.toString();
