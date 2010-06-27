@@ -7,6 +7,87 @@ require 'gherkin/native'
 
 module Gherkin
   module Formatter
+    class Keyword
+      attr_reader :comments, :tags, :id, :name, :description, :line
+      
+      def initialize(comments, tags, id, name, description, line = nil)
+        @comments, @tags, @id, @name, @description, @line = comments, tags, id, name, description, line
+      end
+    end
+    
+    class Feature < Keyword
+      def initialize(comments, tags, name, description)
+        super(comments, tags, "Feature:", name, description)
+      end
+    end
+    
+    class Background < Keyword
+      def initialize(comments, name, description, line)
+        super(comments, [], "Background:", name, description, line)
+      end
+    end
+    
+    class PrettyPrinter
+      if(RUBY_VERSION =~ /^1\.9/)
+        START = /#{'^'.encode('UTF-8')}/
+        TRIPLE_QUOTES = /#{'"""'.encode('UTF-8')}/
+      else
+        START = /^/
+        TRIPLE_QUOTES = /"""/
+      end
+
+      def initialize(io)
+        @io = io
+      end
+      
+      def feature(feature)
+        print_keyword(feature)
+      end
+      
+      def background(background)
+        @io.puts
+        print_keyword(background, '  ')
+      end
+      
+      private
+      
+      def print_keyword(keyword, indenting = '')
+        print_comments(keyword.comments, indenting)
+        print_tags(keyword.tags, indenting)
+        @io.print "#{indenting}#{keyword.id} #{keyword.name}"
+        @io.print "#{indented_element_uri!(keyword.id, keyword.name, keyword.line)}" if keyword.line
+        @io.print "\n"
+        print_description(keyword.description, "#{indenting}  ", false)
+      end
+      
+      def print_tags(tags, indent)
+        @io.write(tags.empty? ? '' : indent + tags.join(' ') + "\n")
+      end
+
+      def print_comments(comments, indent)
+        @io.write(comments.empty? ? '' : indent + comments.join("\n#{indent}") + "\n")
+      end
+
+      def print_description(description, indent, newline=true)
+        if description != ""
+          @io.puts indent(description, indent)
+          @io.puts if newline
+        end
+      end
+      
+      def indent(string, indentation)
+        string.gsub(START, indentation)
+      end
+      
+      def indented_element_uri!(keyword, name, line)
+        return '' if @max_step_length.nil?
+        l = (keyword+name).unpack("U*").length
+        @max_step_length = [@max_step_length, l].max
+        indent = @max_step_length - l
+        ' ' * indent + ' ' + comments("# #{@uri}:#{line}", @monochrome)
+      end
+    end
+    
     class PrettyFormatter
       native_impl('gherkin')
 
@@ -17,21 +98,16 @@ module Gherkin
         @io = io
         @monochrome = monochrome
         @format = MonochromeFormat.new #@monochrome ? MonochromeFormat.new : AnsiColorFormat.new
+        @printer = PrettyPrinter.new(io)
       end
 
       def feature(comments, tags, keyword, name, description, uri)
         @uri = uri
-        print_comments(comments, '')
-        print_tags(tags, '')
-        @io.puts "#{keyword}: #{name}"
-        print_description(description, '  ', false)
+        @printer.feature(Feature.new(comments, tags, name, description))
       end
 
       def background(comments, keyword, name, description, line)
-        @io.puts
-        print_comments(comments, '  ')
-        @io.puts "  #{keyword}: #{name}#{indented_element_uri!(keyword, name, line)}"
-        print_description(description, '    ')
+        @printer.background(Background.new(comments, name, description, line))
       end
 
       def scenario(comments, tags, keyword, name, description, line)

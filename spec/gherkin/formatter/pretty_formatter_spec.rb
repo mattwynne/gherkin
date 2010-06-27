@@ -77,8 +77,13 @@ module Gherkin
         assert_pretty(%{Feature: Feature Description
   Some preamble
 
-  Scenario: Scenario Description
+  Background: Background Name
+    Given things
+    And stuff
+
+  Scenario: Scenario Name
     description has multiple lines
+    that go on and on
 
     Given there is a step
       """
